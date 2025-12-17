@@ -1,20 +1,69 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
+/**
+ * Prisma Schema Configuration
+ * 
+ * This file defines your database schema using Prisma's schema language.
+ * Prisma generates a type-safe client based on this schema.
+ * 
+ * Schema Components:
+ * - generator: Configures how Prisma Client is generated
+ * - datasource: Database connection configuration
+ * - model: Database table/document structure
+ */
+
+/**
+ * Generator Configuration
+ * 
+ * Tells Prisma to generate a JavaScript client for interacting with the database.
+ * The generated client provides type-safe database queries.
+ */
 generator client {
   provider = "prisma-client-js"
 }
 
+/**
+ * Data Source Configuration
+ * 
+ * Defines the database connection.
+ * - provider: Database type (mongodb, postgresql, mysql, etc.)
+ * - url: Connection string from environment variable
+ * 
+ * MongoDB Connection String Format:
+ * mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/DATABASE?retryWrites=true&w=majority
+ */
 datasource db {
-  provider = "mongodb"
-  url      = env("DATABASE_URL")
+  provider = "mongodb" // Using MongoDB (NoSQL document database)
+  url      = env("DATABASE_URL") // Connection string from .env file
 }
 
+/**
+ * Feedback Model
+ * 
+ * Represents a feedback entry in the database.
+ * In MongoDB, this becomes a collection (similar to a table in SQL).
+ * 
+ * Field Descriptions:
+ * - id: Unique identifier (MongoDB ObjectId)
+ * - name: User's name (optional)
+ * - email: User's email (optional)
+ * - message: Feedback message (required)
+ * - rating: Star rating 1-5 (optional)
+ * - createdAt: Timestamp when feedback was created (auto-set)
+ * 
+ * Prisma Decorators:
+ * - @id: Primary key
+ * - @default(auto()): Auto-generate value (MongoDB ObjectId)
+ * - @map("_id"): Map to MongoDB's standard _id field
+ * - @db.ObjectId: MongoDB ObjectId type
+ * - @default(now()): Auto-set to current timestamp
+ */
 model Feedback {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String?
-  email     String?
-  message   String
-  rating    Int?
-  createdAt DateTime @default(now())
+  name      String?  // Optional field (nullable)
+  email     String?  // Optional field (nullable)
+  message   String   // Required field (non-nullable)
+  rating    Int?     // Optional integer (nullable) - represents 1-5 star rating
+  createdAt DateTime @default(now()) // Auto-set to current time on creation
 }
