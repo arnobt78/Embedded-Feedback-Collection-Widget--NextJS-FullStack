@@ -43,4 +43,7 @@ next-env.d.ts
 
 .env
 public/widget.umd.js
+
 .cursorignore
+
+HETZNER_VPS_MIGRATION_GUIDE.md
