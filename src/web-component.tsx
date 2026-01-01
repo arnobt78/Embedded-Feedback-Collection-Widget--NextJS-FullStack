@@ -29,7 +29,9 @@ import tailwindStyles from "./app/globals.css?inline"; // Inline CSS for Shadow 
  * @returns {string} React prop name in camelCase
  */
 export const normalizeAttribute = (attribute: string): string => {
-  return attribute.replace(/-([a-z])/g, (_, letter: string) => letter.toUpperCase());
+  return attribute.replace(/-([a-z])/g, (_, letter: string) =>
+    letter.toUpperCase()
+  );
 };
 
 interface WidgetProps {
@@ -115,4 +117,3 @@ if (typeof window !== "undefined" && !customElements.get("my-widget")) {
 
 // Export for potential programmatic access
 export { WidgetWebComponent };
-
