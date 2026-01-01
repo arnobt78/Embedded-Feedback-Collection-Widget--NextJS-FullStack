@@ -100,6 +100,9 @@ class WidgetWebComponent extends HTMLElement {
   }
 }
 
+// Export for potential programmatic access
+export { WidgetWebComponent };
+
 /**
  * Register the Custom Element
  *
@@ -108,12 +111,11 @@ class WidgetWebComponent extends HTMLElement {
  *
  * After registration, you can use <my-widget> in any HTML page.
  *
- * IMPORTANT: This code must execute immediately when the script loads,
- * not just when exported. For UMD bundles, top-level code executes on load.
+ * IMPORTANT: This code must execute immediately when the script loads.
+ * Placed after export to ensure it executes in UMD bundles.
  */
-if (typeof window !== "undefined" && !customElements.get("my-widget")) {
-  customElements.define("my-widget", WidgetWebComponent);
-}
-
-// Export for potential programmatic access
-export { WidgetWebComponent };
+(function registerWidget() {
+  if (typeof window !== "undefined" && typeof customElements !== "undefined" && !customElements.get("my-widget")) {
+    customElements.define("my-widget", WidgetWebComponent);
+  }
+})();
