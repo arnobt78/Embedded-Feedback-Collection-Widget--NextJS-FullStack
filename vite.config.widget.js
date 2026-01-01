@@ -15,7 +15,7 @@ export default defineConfig({
   },
   build: {
     lib: {
-      entry: resolve(__dirname, "src/web-component.jsx"),
+      entry: resolve(__dirname, "src/web-component.tsx"),
       name: "Widget",
       fileName: () => "widget.umd.js",
       formats: ["umd"],

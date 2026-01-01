@@ -1,9 +1,9 @@
 /**
  * Widget Component - Main Feedback Collection Widget
- * 
+ *
  * This is a reusable feedback widget component that can be embedded in any web application.
  * It provides a floating button that opens a popover with a feedback form.
- * 
+ *
  * Key Features:
  * - Collects user feedback (name, email, message, and star rating)
  * - Configurable API endpoint via props
@@ -19,44 +19,50 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useState } from "react";
+import { useState, FormEvent } from "react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+interface WidgetProps {
+  apiBase?: string;
+}
+
 /**
  * Widget Component
- * @param {string} apiBase - The API endpoint URL for submitting feedback (defaults to "/api/feedback")
- * @returns {JSX.Element} The feedback widget component
+ *
+ * @param props - Component props
+ * @param props.apiBase - The API endpoint URL for submitting feedback (defaults to "/api/feedback")
+ * @returns The feedback widget component
  */
-export default function Widget({ apiBase = "/api/feedback" }) {
+export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
   // State management using React hooks
   // rating: Current selected star rating (1-5), defaults to 3
-  const [rating, setRating] = useState(3);
+  const [rating, setRating] = useState<number>(3);
   // submitted: Boolean flag to show success message after form submission
-  const [submitted, setSubmitted] = useState(false);
+  const [submitted, setSubmitted] = useState<boolean>(false);
   // loading: Boolean flag to disable button and show loading state during API call
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
   // error: String to store and display error messages from API or network failures
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string>("");
 
   /**
    * Handles star rating selection
-   * @param {number} index - The zero-based index of the clicked star (0-4)
+   * @param index - The zero-based index of the clicked star (0-4)
    * Converts to 1-based rating (1-5) for better UX and database storage
    */
-  const onSelectStar = (index) => {
+  const onSelectStar = (index: number): void => {
     setRating(index + 1);
   };
 
   /**
    * Handles form submission
    * Collects form data and sends it to the API endpoint
-   * 
-   * @param {Event} e - Form submit event
-   * 
+   *
+   * @param e - Form submit event
+   *
    * Process:
    * 1. Prevents default form submission (page reload)
    * 2. Extracts form values using native form API
@@ -64,17 +70,18 @@ export default function Widget({ apiBase = "/api/feedback" }) {
    * 4. Handles success/error states appropriately
    * 5. Optionally triggers external dashboard refresh if callback exists
    */
-  const submit = async (e) => {
+  const submit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault(); // Prevent default form submission (page reload)
     setLoading(true); // Show loading state
     setError(""); // Clear any previous errors
-    
+
     // Extract form values using native form API (no need for controlled inputs for simple forms)
-    const form = e.target;
-    const name = form.name.value;
-    const email = form.email.value;
-    const message = form.feedback.value;
-    
+    const form = e.currentTarget;
+    const name = (form.elements.namedItem("name") as HTMLInputElement).value;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const message = (form.elements.namedItem("feedback") as HTMLTextAreaElement)
+      .value;
+
     // POST to configurable API endpoint
     try {
       const res = await fetch(apiBase, {
@@ -82,7 +89,7 @@ export default function Widget({ apiBase = "/api/feedback" }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, message, rating }), // Send all form data as JSON
       });
-      
+
       if (!res.ok) {
         // Handle API errors (400, 500, etc.)
         const data = await res.json();
@@ -90,12 +97,17 @@ export default function Widget({ apiBase = "/api/feedback" }) {
       } else {
         // Success - show thank you message
         setSubmitted(true);
-        
+
         // Try to refresh dashboard if available
         // This allows integration with external dashboards that might display feedback
         // Uses window global to avoid tight coupling
-        if (window.refreshFeedbackDashboard) {
-          window.refreshFeedbackDashboard();
+        if (typeof window !== "undefined") {
+          const win = window as typeof window & {
+            refreshFeedbackDashboard?: () => void;
+          };
+          if (win.refreshFeedbackDashboard) {
+            win.refreshFeedbackDashboard();
+          }
         }
       }
     } catch (err) {
@@ -136,12 +148,17 @@ export default function Widget({ apiBase = "/api/feedback" }) {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Name</Label>
-                    <Input id="name" placeholder="Enter your name" />
+                    <Input
+                      id="name"
+                      name="name"
+                      placeholder="Enter your name"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="Enter your email"
                     />
@@ -151,6 +168,7 @@ export default function Widget({ apiBase = "/api/feedback" }) {
                   <Label htmlFor="feedback">Feedback</Label>
                   <Textarea
                     id="feedback"
+                    name="feedback"
                     placeholder="Tell us what you think"
                     className="min-h-[100px]"
                   />
@@ -188,15 +206,19 @@ export default function Widget({ apiBase = "/api/feedback" }) {
   );
 }
 
+interface StarIconProps extends React.SVGProps<SVGSVGElement> {
+  filled?: boolean;
+}
+
 /**
  * StarIcon Component - Reusable SVG star icon
- * 
- * @param {boolean} filled - Whether the star should be filled or outlined
- * @param {...any} props - Additional props passed to SVG element
- * 
+ *
+ * @param props - Component props
+ * @param props.filled - Whether the star should be filled or outlined
+ *
  * Uses SVG for crisp rendering at any size and easy color customization
  */
-function StarIcon({ filled, ...props }) {
+function StarIcon({ filled, ...props }: StarIconProps) {
   return (
     <svg
       {...props}
@@ -217,11 +239,11 @@ function StarIcon({ filled, ...props }) {
 
 /**
  * MessageCircleIcon Component - Message bubble icon for the widget trigger button
- * 
+ *
  * Uses Lucide icon design patterns with SVG for consistent styling
- * @param {...any} props - Props passed to SVG element (className, size, etc.)
+ * @param props - Props passed to SVG element (className, size, etc.)
  */
-function MessageCircleIcon(props) {
+function MessageCircleIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}

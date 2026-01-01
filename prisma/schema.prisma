@@ -1,69 +1,112 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-/**
- * Prisma Schema Configuration
- * 
- * This file defines your database schema using Prisma's schema language.
- * Prisma generates a type-safe client based on this schema.
- * 
- * Schema Components:
- * - generator: Configures how Prisma Client is generated
- * - datasource: Database connection configuration
- * - model: Database table/document structure
- */
+// Prisma Schema Configuration
+// 
+// This file defines your database schema using Prisma's schema language.
+// Prisma generates a type-safe client based on this schema.
+// 
+// Schema Components:
+// - generator: Configures how Prisma Client is generated
+// - datasource: Database connection configuration
+// - model: Database table/document structure
 
-/**
- * Generator Configuration
- * 
- * Tells Prisma to generate a JavaScript client for interacting with the database.
- * The generated client provides type-safe database queries.
- */
+// Generator Configuration
+// 
+// Tells Prisma to generate a JavaScript client for interacting with the database.
+// The generated client provides type-safe database queries.
 generator client {
   provider = "prisma-client-js"
 }
 
-/**
- * Data Source Configuration
- * 
- * Defines the database connection.
- * - provider: Database type (mongodb, postgresql, mysql, etc.)
- * - url: Connection string from environment variable
- * 
- * MongoDB Connection String Format:
- * mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/DATABASE?retryWrites=true&w=majority
- */
+// Data Source Configuration
+// 
+// Defines the database connection.
+// - provider: Database type (mongodb, postgresql, mysql, etc.)
+// - url: Connection string from environment variable
+// 
+// MongoDB Connection String Format:
+// mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/DATABASE?retryWrites=true&w=majority
 datasource db {
   provider = "mongodb" // Using MongoDB (NoSQL document database)
   url      = env("DATABASE_URL") // Connection string from .env file
 }
 
-/**
- * Feedback Model
- * 
- * Represents a feedback entry in the database.
- * In MongoDB, this becomes a collection (similar to a table in SQL).
- * 
- * Field Descriptions:
- * - id: Unique identifier (MongoDB ObjectId)
- * - name: User's name (optional)
- * - email: User's email (optional)
- * - message: Feedback message (required)
- * - rating: Star rating 1-5 (optional)
- * - createdAt: Timestamp when feedback was created (auto-set)
- * 
- * Prisma Decorators:
- * - @id: Primary key
- * - @default(auto()): Auto-generate value (MongoDB ObjectId)
- * - @map("_id"): Map to MongoDB's standard _id field
- * - @db.ObjectId: MongoDB ObjectId type
- * - @default(now()): Auto-set to current timestamp
- */
+// Project Model
+// 
+// Represents a connected project/application that uses the feedback widget.
+// Each project gets a unique API key for authentication.
+// 
+// Field Descriptions:
+// - id: Unique identifier (MongoDB ObjectId)
+// - name: Project name (e.g., "E-commerce Site", "Marketing Page")
+// - domain: Project domain/URL (e.g., "https://myproject.com")
+// - apiKey: Unique API key for authenticating feedback submissions from this project
+// - description: Optional project description
+// - isActive: Whether the project is currently active (can receive feedback)
+// - createdAt: Timestamp when project was created (auto-set)
+// - updatedAt: Timestamp when project was last updated (auto-updated)
+// - feedbacks: Relation to Feedback entries from this project
+// 
+// Prisma Decorators:
+// - @id: Primary key
+// - @default(auto()): Auto-generate value (MongoDB ObjectId)
+// - @map("_id"): Map to MongoDB's standard _id field
+// - @db.ObjectId: MongoDB ObjectId type
+// - @unique: Ensures API key is unique across all projects
+// - @default(now()): Auto-set to current time on creation
+// - @updatedAt: Auto-update timestamp on record modification
+// - @relation: One-to-many relationship with Feedback model
+model Project {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  name        String     // Project name (required)
+  domain      String     // Project domain/URL (required)
+  apiKey      String     @unique // Unique API key for project authentication
+  description String?    // Optional project description (nullable)
+  isActive    Boolean    @default(true) // Whether project is active (default: true)
+  createdAt   DateTime   @default(now()) // Auto-set to current time on creation
+  updatedAt   DateTime   @updatedAt // Auto-update timestamp on modification
+  feedbacks   Feedback[] // One-to-many relation: one project can have many feedback entries
+}
+
+// Feedback Model
+// 
+// Represents a feedback entry in the database.
+// In MongoDB, this becomes a collection (similar to a table in SQL).
+// 
+// Field Descriptions:
+// - id: Unique identifier (MongoDB ObjectId)
+// - projectId: Foreign key to Project model (optional for backward compatibility)
+// - project: Relation to Project model (optional)
+// - name: User's name (optional)
+// - email: User's email (optional)
+// - message: Feedback message (required)
+// - rating: Star rating 1-5 (optional)
+// - metadata: Optional JSON field for additional data (userAgent, IP, referrer, etc.)
+// - createdAt: Timestamp when feedback was created (auto-set)
+// 
+// Prisma Decorators:
+// - @id: Primary key
+// - @default(auto()): Auto-generate value (MongoDB ObjectId)
+// - @map("_id"): Map to MongoDB's standard _id field
+// - @db.ObjectId: MongoDB ObjectId type
+// - @default(now()): Auto-set to current timestamp
+// - @relation: Many-to-one relationship with Project model (optional)
+// 
+// Indexes:
+// - @@index([projectId]): Index for faster queries filtering by project
+// - @@index([createdAt]): Index for faster queries sorting by date
 model Feedback {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  name      String?  // Optional field (nullable)
-  email     String?  // Optional field (nullable)
-  message   String   // Required field (non-nullable)
-  rating    Int?     // Optional integer (nullable) - represents 1-5 star rating
-  createdAt DateTime @default(now()) // Auto-set to current time on creation
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  projectId String?   @db.ObjectId // Optional foreign key to Project (nullable for backward compatibility)
+  project   Project?  @relation(fields: [projectId], references: [id]) // Optional relation to Project
+  name      String?   // Optional field (nullable)
+  email     String?   // Optional field (nullable)
+  message   String    // Required field (non-nullable)
+  rating    Int?      // Optional integer (nullable) - represents 1-5 star rating
+  metadata  Json?     // Optional JSON field for additional data (userAgent, IP, referrer, etc.)
+  createdAt DateTime  @default(now()) // Auto-set to current time on creation
+
+  @@index([projectId]) // Index for faster project-based queries
+  @@index([createdAt]) // Index for faster date-based sorting
 }

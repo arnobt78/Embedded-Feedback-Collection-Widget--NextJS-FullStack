@@ -10,15 +10,15 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-xs hover:bg-primary/90",
+          "bg-gradient-to-r from-primary/70 via-primary/50 to-primary/30 text-primary-foreground border border-primary/30 shadow-[0_15px_35px_rgba(59,130,246,0.45)] hover:border-primary/40 hover:from-primary/80 hover:via-primary/60 hover:to-primary/40 backdrop-blur-sm",
         destructive:
-          "bg-destructive text-white shadow-xs hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-gradient-to-r from-rose-500/70 via-rose-500/50 to-rose-500/30 text-white border border-rose-400/30 shadow-[0_15px_35px_rgba(225,29,72,0.45)] hover:border-rose-300/40 hover:from-rose-500/80 hover:via-rose-500/60 hover:to-rose-500/40 backdrop-blur-sm focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40",
         outline:
-          "border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50",
+          "border border-white/10 bg-background/50 backdrop-blur-sm shadow-xs hover:bg-accent/50 hover:border-white/20 hover:text-accent-foreground",
         secondary:
-          "bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80",
+          "bg-gradient-to-r from-secondary/70 via-secondary/50 to-secondary/30 text-secondary-foreground border border-secondary/30 shadow-xs hover:bg-secondary/80 backdrop-blur-sm",
         ghost:
-          "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
+          "hover:bg-accent/50 hover:text-accent-foreground backdrop-blur-sm",
         link: "text-primary underline-offset-4 hover:underline",
       },
       size: {
