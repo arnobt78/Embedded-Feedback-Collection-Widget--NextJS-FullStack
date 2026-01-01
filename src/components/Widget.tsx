@@ -48,32 +48,45 @@ export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
 
   // Close popover when clicking outside
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleClickOutside = (event: MouseEvent) => {
-      // Get the actual target element
       const target = event.target as Node;
 
-      // Check if the click is outside the popover
-      // We need to check both the popover and if the target is inside any widget element
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(target) &&
-        // Additional check: ensure we're not clicking inside any input/textarea/button
-        !(target instanceof HTMLInputElement) &&
-        !(target instanceof HTMLTextAreaElement) &&
-        !(target instanceof HTMLButtonElement) &&
-        !(target as HTMLElement).closest?.("form")
-      ) {
+      // Check if click is outside the popover container
+      if (popoverRef.current && !popoverRef.current.contains(target)) {
         setIsOpen(false);
       }
     };
 
-    if (isOpen) {
-      // Use capture phase to handle the event before it bubbles
-      document.addEventListener("mousedown", handleClickOutside, true);
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside, true);
-      };
-    }
+    // Add a small delay to prevent immediate closure when opening
+    const timeoutId = setTimeout(() => {
+      // Listen on document for regular pages and shadow root if available
+      document.addEventListener("mousedown", handleClickOutside);
+
+      // Also listen on the shadow root if we're inside one
+      const shadowRoot = popoverRef.current?.getRootNode();
+      if (shadowRoot && shadowRoot !== document) {
+        shadowRoot.addEventListener(
+          "mousedown",
+          handleClickOutside as EventListener
+        );
+      }
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("mousedown", handleClickOutside);
+
+      // Cleanup shadow root listener
+      const shadowRoot = popoverRef.current?.getRootNode();
+      if (shadowRoot && shadowRoot !== document) {
+        shadowRoot.removeEventListener(
+          "mousedown",
+          handleClickOutside as EventListener
+        );
+      }
+    };
   }, [isOpen]);
 
   /**
@@ -204,14 +217,6 @@ export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
               zIndex: 999999,
               backdropFilter: "blur(16px)",
               transition: "all 0.2s",
-            }}
-            onClick={(e) => {
-              // Prevent clicks inside the popup from closing it
-              e.stopPropagation();
-            }}
-            onMouseDown={(e) => {
-              // Prevent mousedown from bubbling up
-              e.stopPropagation();
             }}
           >
             {submitted ? (
