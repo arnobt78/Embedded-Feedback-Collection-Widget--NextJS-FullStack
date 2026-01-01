@@ -27,7 +27,9 @@ export default defineConfig({
           react: "React",
           "react-dom": "ReactDOM",
         },
+        format: "umd",
       },
+      treeshake: false, // Disable tree shaking to ensure side effects are included
     },
     outDir: "public",
     emptyOutDir: false,

@@ -105,10 +105,14 @@ class WidgetWebComponent extends HTMLElement {
  * This prevents errors when the script is loaded multiple times.
  *
  * After registration, you can use <my-widget> in any HTML page.
+ *
+ * IMPORTANT: This code must execute immediately when the script loads,
+ * not just when exported. For UMD bundles, top-level code executes on load.
  */
-if (!customElements.get("my-widget")) {
+if (typeof window !== "undefined" && !customElements.get("my-widget")) {
   customElements.define("my-widget", WidgetWebComponent);
 }
 
+// Export for potential programmatic access
 export { WidgetWebComponent };
 
