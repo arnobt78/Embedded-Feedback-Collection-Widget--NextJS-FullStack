@@ -10,6 +10,9 @@ export default defineConfig({
       entries: [{ find: "@", replacement: resolve(__dirname, "src") }],
     }),
   ],
+  css: {
+    postcss: "./postcss.config.js", // Ensure PostCSS processes CSS
+  },
   define: {
     "process.env.NODE_ENV": JSON.stringify("production"),
   },
@@ -20,6 +23,7 @@ export default defineConfig({
       fileName: () => "widget.umd.js",
       formats: ["umd"],
     },
+    cssCodeSplit: false, // Don't split CSS - include it all inline
     rollupOptions: {
       external: ["react", "react-dom"],
       output: {

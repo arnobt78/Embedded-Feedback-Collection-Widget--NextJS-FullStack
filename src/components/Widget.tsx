@@ -19,12 +19,7 @@ import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { useState, FormEvent } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { useState, FormEvent, useEffect, useRef } from "react";
 
 interface WidgetProps {
   apiBase?: string;
@@ -47,6 +42,25 @@ export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
   const [loading, setLoading] = useState<boolean>(false);
   // error: String to store and display error messages from API or network failures
   const [error, setError] = useState<string>("");
+  // isOpen: Boolean flag to control popover visibility (simple state-based solution for Shadow DOM)
+  const [isOpen, setIsOpen] = useState<boolean>(false);
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [isOpen]);
 
   /**
    * Handles star rating selection
@@ -121,16 +135,17 @@ export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
   return (
     // Fixed positioning keeps widget always visible in bottom-right corner
     // z-50 ensures it appears above most content
-    <div className="widget fixed bottom-4 right-4 z-50">
-      {/* Radix UI Popover provides accessible, keyboard-navigable popover */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button className="rounded-full shadow-lg hover:scale-105">
-            <MessageCircleIcon className="mr-2 h-5 w-5" />
-            Feedback
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="widget rounded-lg bg-white bg-opacity-95 p-4 shadow-lg w-full max-w-md border border-gray-200">
+    <div className="widget fixed bottom-4 right-4 z-50" ref={popoverRef}>
+      {/* Simple state-based popover for Shadow DOM compatibility */}
+      <Button 
+        className="rounded-full shadow-lg hover:scale-105"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <MessageCircleIcon className="mr-2 h-5 w-5" />
+        Feedback
+      </Button>
+      {isOpen && (
+        <div className="absolute bottom-full right-0 mb-2 w-80 max-w-md rounded-lg bg-white bg-opacity-95 p-4 shadow-lg border border-gray-200 z-50">
           {submitted ? (
             <div>
               <h3 className="text-lg font-bold">
@@ -200,8 +215,8 @@ export default function Widget({ apiBase = "/api/feedback" }: WidgetProps) {
             </div>
           )}
           <Separator className="my-4" />
-        </PopoverContent>
-      </Popover>
+        </div>
+      )}
     </div>
   );
 }
