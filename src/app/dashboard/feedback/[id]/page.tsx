@@ -1,9 +1,9 @@
 /**
  * Feedback Detail Page
- * 
+ *
  * Page for viewing individual feedback entry details.
  * Displays full feedback information including metadata.
- * 
+ *
  * Features:
  * - View complete feedback details
  * - Project information
@@ -39,11 +39,13 @@ interface FeedbackDetailPageProps {
 
 /**
  * Feedback Detail Page
- * 
+ *
  * @param {FeedbackDetailPageProps} props - Component props
  * @returns {JSX.Element} Feedback detail page
  */
-export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) {
+export default function FeedbackDetailPage({
+  params,
+}: FeedbackDetailPageProps) {
   const { id } = use(params);
   const router = useRouter();
   const { data: feedbackList, isLoading } = useFeedback();
@@ -56,7 +58,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
         title="Feedback Details"
         description="Loading feedback details..."
       >
-        <div className="max-w-4xl space-y-4">
+        <div className="max-w-7xl mx-auto space-y-4">
           <Skeleton className="h-96 w-full" />
         </div>
       </DashboardLayout>
@@ -93,7 +95,7 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
       title="Feedback Details"
       description="View detailed feedback information"
     >
-      <div className="max-w-4xl space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         {/* Navigation */}
         <div>
           <Link href="/dashboard/feedback">
@@ -186,7 +188,9 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
               <>
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Additional Information</h3>
+                  <h3 className="text-sm font-medium mb-3">
+                    Additional Information
+                  </h3>
                   <div className="space-y-2">
                     {Object.entries(metadata).map(([key, value]) => (
                       <div key={key} className="flex gap-4 text-sm">
@@ -210,4 +214,3 @@ export default function FeedbackDetailPage({ params }: FeedbackDetailPageProps) 
     </DashboardLayout>
   );
 }
-
