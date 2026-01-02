@@ -120,7 +120,7 @@ export default function ProjectDetailPage({ params }: ProjectDetailPageProps) {
       title="Edit Project"
       description="Update project details and settings"
     >
-      <div className="max-w-2xl space-y-6">
+      <div className="max-w-7xl mx-auto space-y-4">
         {/* API Key Card */}
         <Card>
           <CardContent className="pt-6">

@@ -1,6 +1,6 @@
 /**
  * New Project Page
- * 
+ *
  * Page for creating a new project.
  * Uses the reusable ProjectForm component.
  */
@@ -15,7 +15,7 @@ import type { CreateProjectInput } from "@/types";
 
 /**
  * New Project Page
- * 
+ *
  * @returns {JSX.Element} New project page
  */
 export default function NewProjectPage() {
@@ -32,7 +32,7 @@ export default function NewProjectPage() {
       title="New Project"
       description="Create a new project to start collecting feedback"
     >
-      <div className="max-w-2xl">
+      <div className="max-w-7xl mx-auto">
         <ProjectForm
           onSubmit={handleSubmit}
           isLoading={createProject.isPending}

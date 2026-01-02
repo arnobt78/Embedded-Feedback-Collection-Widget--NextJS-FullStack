@@ -1,16 +1,16 @@
 /**
  * ProjectForm Component
- * 
+ *
  * Reusable form component for creating and editing projects.
  * Uses React Hook Form for form state management and validation.
- * 
+ *
  * Features:
  * - Form validation with Zod
  * - Create and edit modes
  * - Loading states
  * - Error handling
  * - Type-safe form data
- * 
+ *
  * Usage:
  * ```tsx
  * <ProjectForm onSubmit={handleSubmit} defaultValues={project} />
@@ -46,14 +46,20 @@ const projectSchema = z.object({
     .string()
     .min(1, "Domain is required")
     .url("Please enter a valid URL (e.g., https://example.com)"),
-  description: z.string().max(500, "Description is too long").optional().or(z.literal("")),
+  description: z
+    .string()
+    .max(500, "Description is too long")
+    .optional()
+    .or(z.literal("")),
   isActive: z.boolean(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
-  onSubmit: (data: CreateProjectInput | UpdateProjectInput) => void | Promise<void>;
+  onSubmit: (
+    data: CreateProjectInput | UpdateProjectInput
+  ) => void | Promise<void>;
   defaultValues?: Partial<Project>;
   isLoading?: boolean;
   submitLabel?: string;
@@ -61,7 +67,7 @@ interface ProjectFormProps {
 
 /**
  * ProjectForm Component
- * 
+ *
  * @param {ProjectFormProps} props - Component props
  * @param {(data: CreateProjectInput | UpdateProjectInput) => void | Promise<void>} props.onSubmit - Form submission handler
  * @param {Partial<Project>} props.defaultValues - Default form values (for edit mode)
@@ -177,7 +183,10 @@ export function ProjectForm({
                     onChange={field.onChange}
                     className="h-4 w-4 rounded border-white/20 bg-white/5 backdrop-blur-sm accent-sky-500 focus:ring-sky-500/50 focus:ring-2"
                   />
-                  <Label htmlFor="isActive" className="cursor-pointer">
+                  <Label
+                    htmlFor="isActive"
+                    className="cursor-pointer text-white"
+                  >
                     Active (can receive feedback)
                   </Label>
                 </>
@@ -207,4 +216,3 @@ export function ProjectForm({
     </Card>
   );
 }
-
