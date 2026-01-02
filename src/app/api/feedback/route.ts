@@ -16,6 +16,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { withCORS, getProjectByApiKey, getDefaultProject } from "@/lib/api-utils";
 import { auth } from "@/lib/auth";
+import { sendFeedbackNotificationEmail } from "@/lib/email";
 
 /**
  * OPTIONS Handler - CORS Preflight Request
@@ -90,7 +91,36 @@ export async function POST(request: Request) {
         metadata: metadata || null, // Store optional metadata (userAgent, IP, referrer, etc.)
         projectId: projectId, // Associate with project
       },
+      include: {
+        project: {
+          select: {
+            id: true,
+            name: true,
+            domain: true,
+          },
+        },
+      },
     });
+
+    // Send email notification asynchronously (don't block response)
+    // Email sending happens in background - failures are logged but don't affect API response
+    sendFeedbackNotificationEmail({
+      projectName: feedback.project?.name || "Default Project",
+      projectDomain: feedback.project?.domain || "https://localhost:3000",
+      feedbackId: feedback.id,
+      submitterName: feedback.name,
+      submitterEmail: feedback.email,
+      message: feedback.message,
+      rating: feedback.rating,
+      createdAt: feedback.createdAt,
+      dashboardUrl: process.env.NEXTAUTH_URL
+        ? `${process.env.NEXTAUTH_URL}/dashboard/feedback/${feedback.id}`
+        : undefined,
+    }).catch((error) => {
+      // Log email sending errors but don't fail the request
+      console.error("Failed to send feedback notification email:", error);
+    });
+
     return withCORS(NextResponse.json(feedback, { status: 201 })); // 201 = Created
   } catch (error) {
     // Catch any database errors (connection, validation, etc.)
