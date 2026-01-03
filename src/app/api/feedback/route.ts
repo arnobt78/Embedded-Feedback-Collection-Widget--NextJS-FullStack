@@ -116,10 +116,27 @@ export async function POST(request: Request) {
       dashboardUrl: process.env.NEXTAUTH_URL
         ? `${process.env.NEXTAUTH_URL}/dashboard/feedback/${feedback.id}`
         : undefined,
-    }).catch((error) => {
-      // Log email sending errors but don't fail the request
-      console.error("Failed to send feedback notification email:", error);
-    });
+    })
+      .then((result) => {
+        if (result.success) {
+          console.log(`✅ Email sent successfully via ${result.provider}: ${result.messageId}`);
+        } else {
+          console.error(`❌ Email sending failed: ${result.error}`);
+        }
+      })
+      .catch((error) => {
+        // Log email sending errors but don't fail the request
+        console.error("❌ Failed to send feedback notification email:", error);
+        console.error("Error details:", {
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+          envVars: {
+            hasBrevoKey: !!process.env.BREVO_API_KEY,
+            hasResendToken: !!process.env.RESEND_TOKEN,
+            adminEmail: process.env.BREVO_ADMIN_EMAIL || "not set",
+          },
+        });
+      });
 
     return withCORS(NextResponse.json(feedback, { status: 201 })); // 201 = Created
   } catch (error) {
