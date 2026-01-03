@@ -48,22 +48,11 @@ export default function SignUpPage() {
         return;
       }
 
-      // Auto sign-in after successful registration
-      const signInResult = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
-
-      if (signInResult?.error) {
-        setError("Registration successful, but sign-in failed. Please sign in manually.");
-        toast.success("Account created! Please sign in.");
-        router.push("/auth/signin");
-      } else {
-        toast.success("Account created successfully");
-        router.push("/dashboard");
-        router.refresh();
-      }
+      // Registration successful - redirect to sign-in page with success message
+      toast.success(
+        "Account created successfully! Please sign in to continue."
+      );
+      router.push("/auth/signin");
     } catch (err) {
       setError("An error occurred. Please try again.");
       toast.error("Registration failed. Please try again.");
@@ -95,7 +84,9 @@ export default function SignUpPage() {
         <article className="group rounded-[28px] border border-emerald-400/30 bg-gradient-to-br from-emerald-500/25 via-emerald-500/10 to-emerald-500/5 p-8 shadow-[0_30px_80px_rgba(16,185,129,0.3)] backdrop-blur-sm transition hover:border-emerald-300/50">
           {/* Header */}
           <div className="mb-6 text-center">
-            <h1 className="text-3xl font-semibold text-white">Create Account</h1>
+            <h1 className="text-3xl font-semibold text-white">
+              Create Account
+            </h1>
             <p className="mt-2 text-sm text-white/70">
               Sign up to get started with your feedback dashboard
             </p>
@@ -125,4 +116,3 @@ export default function SignUpPage() {
     </div>
   );
 }
-
