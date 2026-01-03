@@ -100,7 +100,7 @@ function SidebarContent({ mobile = false }: { mobile?: boolean }) {
       {/* Logo/Home Link */}
       <div className="flex items-center gap-2 p-4 border-b border-white/10 min-h-[4rem]">
         <Link
-          href="/"
+          href="/dashboard"
           className="flex items-center gap-2 text-lg font-semibold text-white hover:opacity-80 transition-opacity"
         >
           <Home className="h-5 w-5" />
