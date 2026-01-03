@@ -15,7 +15,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { DashboardLayout } from "@/components/dashboard/dashboard-layout";
 import {
   Card,
@@ -25,7 +25,9 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { useProjects, useDeleteProject } from "@/hooks/use-projects";
 import { toast } from "sonner";
 import {
@@ -47,7 +49,12 @@ import {
   EyeOff,
   FolderKanban,
   CheckCircle2,
+  Calendar,
+  Clock,
+  Search,
+  X,
 } from "lucide-react";
+import { format } from "date-fns";
 import Link from "next/link";
 
 /**
@@ -65,6 +72,44 @@ export default function ProjectsPage() {
     id: string;
     name: string;
   } | null>(null);
+
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "active" | "inactive"
+  >("all");
+
+  // Filter projects based on search and status
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+
+    let filtered = projects;
+
+    // Filter by status
+    if (statusFilter === "active") {
+      filtered = filtered.filter((p) => p.isActive);
+    } else if (statusFilter === "inactive") {
+      filtered = filtered.filter((p) => !p.isActive);
+    }
+
+    // Filter by search query (name, domain, description)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((p) => {
+        const nameMatch = p.name.toLowerCase().includes(query);
+        const domainMatch = p.domain.toLowerCase().includes(query);
+        const descriptionMatch = p.description?.toLowerCase().includes(query);
+        return nameMatch || domainMatch || descriptionMatch;
+      });
+    }
+
+    return filtered;
+  }, [projects, searchQuery, statusFilter]);
+
+  // Calculate project statistics from filtered projects
+  const totalProjects = filteredProjects.length;
+  const activeProjects = filteredProjects.filter((p) => p.isActive).length;
+  const inactiveProjects = totalProjects - activeProjects;
 
   /**
    * Copy API key to clipboard
@@ -142,12 +187,138 @@ export default function ProjectsPage() {
       <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>All Projects</CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-wrap">
+              <CardTitle className="flex items-center gap-2">
+                All Projects
+                {!isLoading && (
+                  <span className="text-base font-normal text-muted-foreground">
+                    ({totalProjects})
+                  </span>
+                )}
+              </CardTitle>
+              {!isLoading && totalProjects > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="default"
+                    className="bg-emerald-500/20 text-emerald-400 border-emerald-400/30 hover:bg-emerald-500/30"
+                  >
+                    Active {activeProjects}
+                  </Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-gray-500/20 text-gray-400 border-gray-400/30 hover:bg-gray-500/30"
+                  >
+                    Inactive {inactiveProjects}
+                  </Badge>
+                </div>
+              )}
+            </div>
             <CardDescription>
               Manage projects that use the feedback widget
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {/* Search and Filter Bar - Responsive */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6">
+              {/* Search Input */}
+              <div className="relative flex-1 sm:max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search projects..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 bg-white/5 backdrop-blur-sm border-white/20 text-white placeholder:text-white/40 focus-visible:border-sky-400 focus-visible:ring-sky-500/50 shadow-[0_10px_30px_rgba(2,132,199,0.15)]"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-white transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Status Filter Buttons */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={statusFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("all")}
+                  className={
+                    statusFilter === "all"
+                      ? "bg-sky-500/20 text-sky-400 border-sky-400/30 hover:bg-sky-500/30"
+                      : "border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+                  }
+                >
+                  All
+                </Button>
+                <Button
+                  variant={statusFilter === "active" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("active")}
+                  className={
+                    statusFilter === "active"
+                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-400/30 hover:bg-emerald-500/30"
+                      : "border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+                  }
+                >
+                  Active
+                </Button>
+                <Button
+                  variant={statusFilter === "inactive" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setStatusFilter("inactive")}
+                  className={
+                    statusFilter === "inactive"
+                      ? "bg-gray-500/20 text-gray-400 border-gray-400/30 hover:bg-gray-500/30"
+                      : "border-white/20 bg-white/10 text-white hover:bg-white/20 backdrop-blur-sm"
+                  }
+                >
+                  Inactive
+                </Button>
+              </div>
+            </div>
+
+            {/* Active Filters Display */}
+            {(searchQuery || statusFilter !== "all") && (
+              <div className="flex items-center gap-2 mb-6 flex-wrap">
+                {searchQuery && (
+                  <div className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-violet-400/30 bg-gradient-to-r from-violet-500/25 via-violet-500/10 to-violet-500/5 text-white rounded-md backdrop-blur-sm shadow-[0_10px_30px_rgba(139,92,246,0.2)]">
+                    Search: &quot;{searchQuery}&quot;
+                    <button
+                      onClick={() => setSearchQuery("")}
+                      className="ml-1 hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {statusFilter !== "all" && (
+                  <div className="inline-flex items-center gap-1 px-2 py-1 text-xs border border-sky-400/30 bg-gradient-to-r from-sky-500/25 via-sky-500/10 to-sky-500/5 text-white rounded-md backdrop-blur-sm shadow-[0_10px_30px_rgba(2,132,199,0.2)]">
+                    Status: {statusFilter === "active" ? "Active" : "Inactive"}
+                    <button
+                      onClick={() => setStatusFilter("all")}
+                      className="ml-1 hover:text-destructive transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                  }}
+                  className="h-7"
+                >
+                  Clear All
+                </Button>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="space-y-4">
                 {[1, 2, 3].map((i) => (
@@ -158,9 +329,9 @@ export default function ProjectsPage() {
                   </div>
                 ))}
               </div>
-            ) : projects && projects.length > 0 ? (
+            ) : filteredProjects && filteredProjects.length > 0 ? (
               <div className="space-y-4">
-                {projects.map((project) => {
+                {filteredProjects.map((project) => {
                   const isVisible = visibleApiKeys.has(project.id);
                   const maskedApiKey = `${project.apiKey.substring(
                     0,
@@ -170,7 +341,7 @@ export default function ProjectsPage() {
                   return (
                     <div
                       key={project.id}
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-white/10 rounded-[20px] bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-sm hover:border-white/20 hover:from-white/10 hover:via-white/10 hover:to-white/10 transition-all"
+                      className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border border-white/10 rounded-[20px] bg-gradient-to-br from-white/5 via-white/5 to-white/5 backdrop-blur-sm hover:border-white/20 hover:from-white/10 hover:via-white/10 hover:to-white/10 transition-all"
                     >
                       <div className="flex-1 space-y-1 w-full sm:w-auto">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full">
@@ -238,9 +409,66 @@ export default function ProjectsPage() {
                             )}
                           </Button>
                         </div>
-                        <p className="text-xs text-muted-foreground">
-                          {project._count?.feedbacks ?? 0} feedback entries
-                        </p>
+                        {/* Feedback entries - Mobile dates shown here, sm+ dates shown absolutely positioned */}
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
+                          <p className="text-xs text-muted-foreground">
+                            {project._count?.feedbacks ?? 0} feedback entries
+                          </p>
+                          {/* Date Information - Stacked on mobile, absolutely positioned on sm+ */}
+                          <div className="flex flex-col sm:hidden gap-1 text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1.5">
+                              <Calendar className="h-3 w-3 flex-shrink-0" />
+                              <span>Created:</span>
+                              <span className="font-medium">
+                                {format(
+                                  new Date(project.createdAt),
+                                  "MMM d, yyyy h:mm a"
+                                )}
+                              </span>
+                            </div>
+                            {project.updatedAt &&
+                              project.updatedAt.toString() !==
+                                project.createdAt.toString() && (
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="h-3 w-3 flex-shrink-0" />
+                                  <span>Updated:</span>
+                                  <span className="font-medium">
+                                    {format(
+                                      new Date(project.updatedAt),
+                                      "MMM d, yyyy h:mm a"
+                                    )}
+                                  </span>
+                                </div>
+                              )}
+                          </div>
+                        </div>
+                        {/* Date Information - Absolutely positioned on sm+ screens, aligned with delete button right edge */}
+                        <div className="hidden sm:flex sm:absolute sm:right-4 sm:bottom-4 sm:items-center sm:gap-2 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-3 w-3 flex-shrink-0" />
+                            <span>Created:</span>
+                            <span className="font-medium">
+                              {format(
+                                new Date(project.createdAt),
+                                "MMM d, yyyy 'at' h:mm a"
+                              )}
+                            </span>
+                          </div>
+                          {project.updatedAt &&
+                            project.updatedAt.toString() !==
+                              project.createdAt.toString() && (
+                              <div className="flex items-center gap-1.5">
+                                <Clock className="h-3 w-3 flex-shrink-0" />
+                                <span>Updated:</span>
+                                <span className="font-medium">
+                                  {format(
+                                    new Date(project.updatedAt),
+                                    "MMM d, yyyy 'at' h:mm a"
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                        </div>
                       </div>
                       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto mt-4 sm:mt-0">
                         <Link
@@ -273,7 +501,27 @@ export default function ProjectsPage() {
                   );
                 })}
               </div>
-            ) : (
+            ) : filteredProjects.length === 0 &&
+              (searchQuery || statusFilter !== "all") ? (
+              <div className="text-center py-12">
+                <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  No projects found
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  No projects match your search or filter criteria
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setStatusFilter("all");
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </div>
+            ) : projects && projects.length === 0 ? (
               <div className="text-center py-12">
                 <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
@@ -287,7 +535,7 @@ export default function ProjectsPage() {
                   </Button>
                 </Link>
               </div>
-            )}
+            ) : null}
           </CardContent>
         </Card>
       </div>
