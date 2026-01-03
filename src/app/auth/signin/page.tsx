@@ -38,7 +38,12 @@ export default function SignInPage() {
         setError("Invalid email or password");
         toast.error("Sign in failed. Please check your credentials.");
       } else {
-        toast.success("Signed in successfully");
+        // Extract username from email for welcome message
+        const emailUsername = data.email.split("@")[0];
+        const capitalizedUsername = emailUsername.charAt(0).toUpperCase() + emailUsername.slice(1);
+        toast.success(`Welcome back, ${capitalizedUsername}! 👋`, {
+          description: "You've been signed in successfully",
+        });
         router.push("/dashboard");
         router.refresh();
       }

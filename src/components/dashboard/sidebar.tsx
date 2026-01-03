@@ -17,9 +17,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +86,6 @@ const navItems: NavItem[] = [
  */
 function SidebarContent({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [session, setSession] = useState<{
     user?: {
       name?: string | null;
@@ -132,14 +132,31 @@ function SidebarContent({ mobile = false }: { mobile?: boolean }) {
 
   /**
    * Handle logout
+   * Clear session and force full page reload to clear all cached data
    */
   const handleLogout = async () => {
-    await signOut({
-      redirect: false,
-      callbackUrl: "/auth/signin",
-    });
-    router.push("/auth/signin");
-    router.refresh();
+    // Get user info for goodbye message before signing out
+    const userName =
+      session?.user?.name || session?.user?.email?.split("@")[0] || "there";
+
+    try {
+      // Sign out (clears JWT cookie)
+      await signOut({
+        redirect: false,
+      });
+
+      // Show goodbye message
+      toast.success(`See you soon, ${userName}! 👋`, {
+        description: "You've been signed out successfully",
+      });
+    } catch (error) {
+      console.error("Error during sign out:", error);
+    }
+
+    // Small delay to show toast, then force full page reload to clear all cached data
+    setTimeout(() => {
+      window.location.href = "/auth/signin";
+    }, 500);
   };
 
   return (
