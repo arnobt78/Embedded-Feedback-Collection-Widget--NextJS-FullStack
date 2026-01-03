@@ -102,8 +102,7 @@ export async function POST(request: Request) {
       },
     });
 
-    // Send email notification (fire and forget, but wait briefly to capture errors)
-    // Start email sending but don't block the response
+    // Send email notification (wait for completion to capture logs)
     // Log email attempt immediately for debugging
     console.log("📧 Attempting to send feedback notification email...", {
       feedbackId: feedback.id,
@@ -112,52 +111,49 @@ export async function POST(request: Request) {
       adminEmail: process.env.BREVO_ADMIN_EMAIL || "not set",
     });
 
-    const emailPromise = sendFeedbackNotificationEmail({
-      projectName: feedback.project?.name || "Default Project",
-      projectDomain: feedback.project?.domain || "https://localhost:3000",
-      feedbackId: feedback.id,
-      submitterName: feedback.name,
-      submitterEmail: feedback.email,
-      message: feedback.message,
-      rating: feedback.rating,
-      createdAt: feedback.createdAt,
-      dashboardUrl: process.env.NEXTAUTH_URL
-        ? `${process.env.NEXTAUTH_URL}/dashboard/feedback/${feedback.id}`
-        : undefined,
-    })
-      .then((result) => {
-        if (result.success) {
-          console.log(`✅ Email sent successfully via ${result.provider}: ${result.messageId}`);
-        } else {
-          console.error(`❌ Email sending failed: ${result.error}`);
-        }
-      })
-      .catch((error) => {
-        // Log email sending errors but don't fail the request
-        console.error("❌ Failed to send feedback notification email:", error);
-        console.error("Error details:", {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined,
-          envVars: {
-            hasBrevoKey: !!process.env.BREVO_API_KEY,
-            hasResendToken: !!process.env.RESEND_TOKEN,
-            adminEmail: process.env.BREVO_ADMIN_EMAIL || "not set",
-          },
-        });
-      });
+    // Wait for email to complete (with 5 second timeout) so we can see results in logs
+    // This ensures success/error logs are captured before function completes
+    try {
+      const emailResult = await Promise.race([
+        sendFeedbackNotificationEmail({
+          projectName: feedback.project?.name || "Default Project",
+          projectDomain: feedback.project?.domain || "https://localhost:3000",
+          feedbackId: feedback.id,
+          submitterName: feedback.name,
+          submitterEmail: feedback.email,
+          message: feedback.message,
+          rating: feedback.rating,
+          createdAt: feedback.createdAt,
+          dashboardUrl: process.env.NEXTAUTH_URL
+            ? `${process.env.NEXTAUTH_URL}/dashboard/feedback/${feedback.id}`
+            : undefined,
+        }),
+        new Promise<{ success: false; error: string }>((resolve) =>
+          setTimeout(() => {
+            console.warn("⏱️ Email sending timeout (took longer than 5 seconds)");
+            resolve({ success: false, error: "Timeout after 5 seconds" });
+          }, 5000)
+        ),
+      ]);
 
-    // Wait up to 3 seconds for email to complete (to capture errors in logs)
-    // This ensures errors are logged before function completes
-    // After 3 seconds, function returns even if email is still sending
-    Promise.race([
-      emailPromise,
-      new Promise((resolve) => setTimeout(() => {
-        console.log("⏱️ Email sending in progress (function returning, email will complete in background)");
-        resolve(null);
-      }, 3000)),
-    ]).catch(() => {
-      // Ignore race timeout - email will continue in background
-    });
+      if (emailResult.success) {
+        console.log(`✅ Email sent successfully via ${emailResult.provider}: ${emailResult.messageId}`);
+      } else {
+        console.error(`❌ Email sending failed: ${emailResult.error}`);
+      }
+    } catch (error) {
+      // Log email sending errors but don't fail the request
+      console.error("❌ Failed to send feedback notification email:", error);
+      console.error("Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+        envVars: {
+          hasBrevoKey: !!process.env.BREVO_API_KEY,
+          hasResendToken: !!process.env.RESEND_TOKEN,
+          adminEmail: process.env.BREVO_ADMIN_EMAIL || "not set",
+        },
+      });
+    }
 
     return withCORS(NextResponse.json(feedback, { status: 201 })); // 201 = Created
   } catch (error) {
