@@ -76,15 +76,65 @@ const authConfig: NextAuthConfig = {
     strategy: "jwt",
   },
   callbacks: {
+    async signIn({ user, account, profile }) {
+      // Handle OAuth providers (Google, GitHub, etc.) - create/find user in database
+      if (account?.provider === "google" && user.email) {
+        try {
+          // Type-safe profile data extraction
+          const googleProfile = profile as
+            | { name?: string; picture?: string; email_verified?: boolean }
+            | undefined;
+
+          // Check if user exists in database
+          let dbUser = await prisma.user.findUnique({
+            where: { email: user.email },
+          });
+
+          // If user doesn't exist, create them with MongoDB ObjectID
+          if (!dbUser) {
+            dbUser = await prisma.user.create({
+              data: {
+                email: user.email,
+                name: user.name || googleProfile?.name || null,
+                image: user.image || googleProfile?.picture || null,
+                emailVerified: googleProfile?.email_verified
+                  ? new Date()
+                  : null,
+              },
+            });
+          } else {
+            // Update user info if it changed
+            await prisma.user.update({
+              where: { id: dbUser.id },
+              data: {
+                name: user.name || googleProfile?.name || dbUser.name,
+                image: user.image || googleProfile?.picture || dbUser.image,
+                emailVerified: googleProfile?.email_verified
+                  ? new Date()
+                  : dbUser.emailVerified,
+              },
+            });
+          }
+
+          // Replace user.id with database ObjectID (this will be used in jwt callback)
+          user.id = dbUser.id;
+        } catch (error) {
+          console.error("Error in signIn callback:", error);
+          return false; // Block sign in on error
+        }
+      }
+      return true; // Allow sign in
+    },
     async jwt({ token, user }) {
       if (user) {
+        // Use database ObjectID from user (set in signIn callback for OAuth, or from authorize for credentials)
         token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user && token.id) {
-        // Extend session user with id property from token
+        // Extend session user with id property from token (MongoDB ObjectID)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (session.user as any).id = token.id as string;
       }
@@ -99,4 +149,3 @@ const authConfig: NextAuthConfig = {
  * Creates the NextAuth handler with the configuration.
  */
 export const { handlers, auth, signIn, signOut } = NextAuth(authConfig);
-
